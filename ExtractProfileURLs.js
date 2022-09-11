@@ -15,7 +15,7 @@ function getSearchURL(keyword){
 
 const ExtractProfileURLs = async (name) => {
 
-    const browser = await puppeteer.launch({headless: true,userDataDir: './my/path'});
+    const browser = await puppeteer.launch({headless: false,userDataDir: './my/path'});
     const page = await browser.newPage();
     
     await page.setCookie(cookie);

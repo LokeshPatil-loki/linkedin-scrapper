@@ -14,7 +14,7 @@ import fs from "fs";
 
 // export default ScrapeLinkedinWithKeywords;
 const startTime = new Date().toLocaleTimeString();
-let keywords = "Sarvesh";
+let keywords = "ajay";
 const profileURLS = await ExtractProfileURLs(keywords);
 const profiles = await ScrapeProfiles(profileURLS);
 console.log(profiles);

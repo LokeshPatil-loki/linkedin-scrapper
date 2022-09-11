@@ -20,7 +20,7 @@ const selectors = {
 
 const ScrapeProfiles = async (profileURL) => {
     const profiles = [];
-    const browser = await puppeteer.launch({headless: true,userDataDir: './my/path'});
+    const browser = await puppeteer.launch({headless: false,userDataDir: './my/path'});
     const page  = await browser.newPage();
     await page.setCookie(cookie);
     await page.setViewport({
@@ -29,7 +29,9 @@ const ScrapeProfiles = async (profileURL) => {
     });
     for(let i=0;i<profileURL.length;i++){
         const profile = {};
-        await page.goto(profileURL[i],{waitUntil: 'domcontentloaded'});
+        profile.url = profileURL[i];
+        // await page.goto(profileURL[i],{waitUntil: 'domcontentloaded'});
+        await page.goto(profileURL[i]);
         const reuslt = await page.evaluate(() => {
             return document.documentElement.innerHTML;
         });
