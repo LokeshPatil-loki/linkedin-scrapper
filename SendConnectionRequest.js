@@ -19,7 +19,12 @@ const selectors = {
 }
 const cookie = JSON.parse(fs.readFileSync("./cookie.json"));
 
-const SendConnectionRequest = async (profileUrl) => {
+
+function createMessage(fullName){
+	return `Hello ${fullName},\nTesting automated connection request`;
+}
+
+const SendConnectionRequest = async (profiles) => {
 	// Launch browser
 	const browser = await puppeteer.launch({headless: false,userDataDir: './my/path'});
 
@@ -35,91 +40,111 @@ const SendConnectionRequest = async (profileUrl) => {
         height: 1200
     });
 
-	// load a profile url into a page and that profile will be loaded into page
-	await page.goto(profileUrl,{ waitUntil: "domcontentloaded" });
-
-	// get Connection Status
-	const getConnectionStatus = async () => {
-		const pvsActionButtons = await page.waitForSelector(selectors.pvsActionButtons);
-		try {
-			await page.waitForSelector(selectors.checkConnection,{timeout: 1000});
-		} catch (error) {
-			console.log("Connected");
-		}
-		const connectionStatus = await page.evaluate((selectors)=>{
-			const element = document.querySelectorAll(selectors.pvsActionButtons);
-			console.log(element);
-			if (element.length == 2){
-				const checkConnection = document.querySelectorAll(selectors.checkConnection);
-				if(checkConnection.length == 0){
-					return 1;
-				}else{
-					console.log("Not Connected");
-					return 2;
-				}
-			}else{
-				if(element[0].innerText == "Following" || element[0].innerText == "Follow")
-					return 2;
-				return 3
+	const connect = async (profile) => {
+		// load a profile url into a page and that profile will be loaded into page
+		await page.goto(profile.url,{ waitUntil: "domcontentloaded" });
+		const messageNote = createMessage(profile.fullName.split(" ")[0]);
+		// get Connection Status
+		const getConnectionStatus = async () => {
+			const pvsActionButtons = await page.waitForSelector(selectors.pvsActionButtons);
+			try {
+				await page.waitForSelector(selectors.checkConnection,{timeout: 1000});
+			} catch (error) {
+				// console.log("Connected");
 			}
-		},selectors);
-		console.log(connectionStatus);
-		return connectionStatus;
-	}
-
-	const requestWithNote = async () => {
-			const addNoteButton = await page.waitForSelector(selectors.addNote);
-			await addNoteButton.click();
-		
-			const textAreaCustomMessage = await page.waitForSelector(selectors.textAreaCustomMessage);
-			await textAreaCustomMessage.focus();
-			await textAreaCustomMessage.click();
-		
-			await page.evaluate((selectors)=>{
-				const ip = document.querySelector(selectors.textAreaCustomMessage);
-				ip.click();
-		
-				ip.value = "Testing automated connection with note";
-			},selectors)
-			await textAreaCustomMessage.press(".");
-			await textAreaCustomMessage.press("Backspace");
-			
-			const sendButton = await page.waitForSelector(selectors.sendButton);
-			await sendButton.focus();
-			await sendButton.click();
-	}
-
-	const connectionStatus = await getConnectionStatus();
-	if(connectionStatus != 1){
-		if(connectionStatus == 3){
-			console.log("3 buttons");
-			const connectButton = await page.waitForSelector(selectors.connectButton);
-			await connectButton.click();
-			await requestWithNote();
-			
-		}else if(connectionStatus == 2){
-			console.log("2 buttons");
-			const moreButton = await page.waitForSelector(selectors.moreButton);
-			await moreButton.click();
-			const moreConnect = await page.evaluate((selectors) => {
-				const element = document.querySelector(selectors.moreConnect1);
-				if(element.querySelector("span").innerText == "Report / Block"){
-					return selectors.moreConnect2
+			const connectionStatus = await page.evaluate((selectors)=>{
+				const element = document.querySelectorAll(selectors.pvsActionButtons);
+				console.log(element);
+				if (element.length == 2){
+					const checkConnection = document.querySelectorAll(selectors.checkConnection);
+					if(checkConnection.length == 0){
+						return 1;
+					}else{
+						console.log("Not Connected");
+						return 2;
+					}
 				}else{
-					return selectors.moreConnect1
+					if(element[0].innerText == "Following" || element[0].innerText == "Follow")
+						return 2;
+					return 3
 				}
 			},selectors);
-			const connectButton = await page.waitForSelector(moreConnect);
-			await connectButton.click();
-			await requestWithNote();
+			console.log(connectionStatus);
+			return connectionStatus;
 		}
 
-	}else{
-		console.log("1 buttons");
+		const requestWithNote = async () => {
+				const addNoteButton = await page.waitForSelector(selectors.addNote);
+				await addNoteButton.click();
+			
+				const textAreaCustomMessage = await page.waitForSelector(selectors.textAreaCustomMessage);
+				await textAreaCustomMessage.focus();
+				await textAreaCustomMessage.click();
+			
+				await page.evaluate((selectors,messageNote)=>{
+					const ip = document.querySelector(selectors.textAreaCustomMessage);
+					ip.click();
+			
+					ip.value = messageNote;
+				},selectors,messageNote);
+
+				await textAreaCustomMessage.press(".");
+				await textAreaCustomMessage.press("Backspace");
+				
+				const sendButton = await page.waitForSelector(selectors.sendButton);
+				await sendButton.focus();
+				await sendButton.click();
+		}
+
+		const connectionStatus = await getConnectionStatus();
+
+		if(connectionStatus != 1){
+			if(connectionStatus == 3){
+				console.log("3 buttons");
+				const connectButton = await page.waitForSelector(selectors.connectButton);
+				await connectButton.click();
+				await requestWithNote();
+				
+			}else if(connectionStatus == 2){
+				console.log("2 buttons");
+				const moreButton = await page.waitForSelector(selectors.moreButton);
+				await moreButton.click();
+				const moreConnect = await page.evaluate((selectors) => {
+					const element = document.querySelector(selectors.moreConnect1);
+					if(element.querySelector("span").innerText == "Report / Block"){
+						return selectors.moreConnect2
+					}else{
+						return selectors.moreConnect1
+					}
+				},selectors);
+
+				const connectButton = await page.waitForSelector(moreConnect);
+				await connectButton.click();
+				await requestWithNote();
+			}
+
+		}else{
+			console.log("1 buttons");
+		}
 	}
-	
+
+	for(let i=0;i<profiles.length;i++){
+		console.log("Sendning Connection request to " + profiles[i].fullName)
+		await connect(profiles[i]);
+	}
+
+
 	await browser.close();
 }
 
-await SendConnectionRequest("https://www.linkedin.com/in/ashray-kumar-punase-859545245/");
 
+// try {
+// 	await SendConnectionRequest([{
+// 		url: "https://www.linkedin.com/in/ashray-kumar-punase-859545245/",
+// 		fullName: "Ashray Kumar Punase"
+// 	}]);
+// } catch (error) {
+// 	console.log(error);
+// }
+
+export default SendConnectionRequest;
