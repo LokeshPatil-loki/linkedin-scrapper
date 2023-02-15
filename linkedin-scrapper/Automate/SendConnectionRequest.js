@@ -52,6 +52,8 @@ const SendConnectionRequest = async (profiles,messageTemplate,headless=true) => 
 	const connect = async (profile) => {
 		// load a profile url into a page and that profile will be loaded into page
 		await page.goto(profile.url,{ waitUntil: "domcontentloaded" });
+		await page.waitForSelector(selectors.education.title);
+
 		const status = await page.evaluate(()=>{
 			return document.location.href
 		});

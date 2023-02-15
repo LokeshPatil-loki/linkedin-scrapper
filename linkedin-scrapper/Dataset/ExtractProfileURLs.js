@@ -32,12 +32,14 @@ const ExtractProfileURLs = async (name,headless=true) => {
         return document.documentElement.innerHTML;
 
     });
-    console.log("ssssss");
 
     let $ = cheerio.load(result);
     const bottomNav = $(".artdeco-pagination.artdeco-pagination--has-controls.ember-view.pv5.ph2");
     
-    let numberOfPages = $(bottomNav).find("ul button").length;
+    let numberOfPages = $(bottomNav).find("ul button");
+    numberOfPages = $(numberOfPages[numberOfPages.length-1]).text()
+    console.log(numberOfPages)
+    numberOfPages = parseInt(numberOfPages)
     numberOfPages = numberOfPages == 0 ? 1 : numberOfPages;
     console.log("Total Pages: " + numberOfPages);
     const profileURLS = [];
@@ -47,6 +49,7 @@ const ExtractProfileURLs = async (name,headless=true) => {
         if(i > 1){
             // Change to the next Page
             await page.goto(baseUrl+"&page="+i);
+            await page.waitForSelector(".artdeco-pagination.artdeco-pagination--has-controls.ember-view.pv5.ph2");
             const result = await page.evaluate(()=>{
                 // page.reload();
                 return document.documentElement.innerHTML;

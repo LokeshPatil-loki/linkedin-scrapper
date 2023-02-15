@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import puppeteer from "puppeteer";
 import fs from "fs";
+const COLLEGE = "Bharati Vidyapeeth College of Engineering, Navi Mumbai";
 
 const cookie = JSON.parse(fs.readFileSync("./cookie.json"));
 const selectors = {
@@ -30,6 +31,7 @@ const ScrapeProfiles = async (profileURL,headless=true) => {
     });
     for(let i=0;i<profileURL.length;i++){
         const profile = {};
+        profile.isAlumni = false;
         profile.url = profileURL[i];
         // await page.goto(profileURL[i],{waitUntil: 'domcontentloaded'});
         await page.goto(profileURL[i]);
@@ -80,6 +82,16 @@ const ScrapeProfiles = async (profileURL,headless=true) => {
             const date = $(li).find(selectors.education.date).text();
             educationItem.date = date;
             console.log(date);
+            if(title === COLLEGE){
+                const passingYear = getPassingYear(date);
+                if(passingYear < 2024){
+                    profile.isAlumni = true;
+                    console.log("Alumni: True");
+                }else{
+                    console.log("Alumni: False");
+                }
+            }
+            
     
             profile.education.push(educationItem);
             console.log()
@@ -87,10 +99,20 @@ const ScrapeProfiles = async (profileURL,headless=true) => {
     
         // console.log(profile);
         profiles.push(profile);
+        console.log(JSON.stringify(profile))
+        console.log("--------------------------------------------------------------------\n")
+
     }
     await browser.close();
     console.log(profiles);
     return profiles;
+}
+
+const getPassingYear = (date) => {
+    const splitDate = date.split("-");
+    const passingDate = splitDate[1].trim().split(" ");
+    const passingYear = parseInt(passingDate[(passingDate.length - 1)]);
+    return passingYear;
 }
 
 

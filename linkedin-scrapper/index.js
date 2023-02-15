@@ -2,19 +2,23 @@ import express from "express";
 import ExtractProfileURLs from "./Automate/ExtractProfileURLs.js";
 import ScrapeProfiles from "./Automate/ScrapeProfile.js";
 import SendConnectionRequest from "./Automate/SendConnectionRequest.js"
+import test from "./test.js";
 import cors from "cors";
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
+app.post("/test",test)
+
 app.post("/extractUrls",async (req,res) => {
     try {
         const keyword = req.body.keyword;
-        const profileUrls = await ExtractProfileURLs(keyword,false);
+        const profileUrls = await ExtractProfileURLs(keyword,true);
+        console.log(profileUrls);
         res.status(200).json(profileUrls);
     } catch (error) {
-        
+        console.log(error);
     }
 
 });

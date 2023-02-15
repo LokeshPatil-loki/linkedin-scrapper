@@ -1,8 +1,8 @@
 import * as cheerio from 'cheerio';
 import puppeteer from "puppeteer";
 import fs from "fs";
+import { clear } from 'console';
 
-const cookie = JSON.parse(fs.readFileSync("./cookie.json"));
 const selectors = {
   profileImg: ".ph5 > .display-flex > div img",
   fullName: ".ph5 > .mt2 h1",
@@ -17,28 +17,27 @@ const selectors = {
       date: "div.display-flex a > div + span + span > span:first-child"
   }
 }
+const cookie = JSON.parse(fs.readFileSync("./cookie.json"));
 
+const test = async (req, res) => {
+  clear()
+  const url = "https://www.linkedin.com/in/priya-saw-875476209/";
 
-const ScrapeProfiles = async (profileURL,headless=true) => {
-    const profiles = [];
-    const browser = await puppeteer.launch({headless: headless,userDataDir: './my/path'});
-    const page  = await browser.newPage();
-    await page.setCookie(cookie);
-    await page.setViewport({
-        width: 1200,
-        height: 1200
-    });
-    for(let i=0;i<profileURL.length;i++){
-        const profile = {};
-        profile.url = profileURL[i];
-        // await page.goto(profileURL[i],{waitUntil: 'domcontentloaded'});
-        await page.goto(profileURL[i]);
-        await page.waitForSelector(selectors.education.title);
-        const reuslt = await page.evaluate(() => {
-            return document.documentElement.innerHTML;
-        });
-        
-        const $ = cheerio.load(reuslt);
+  const profiles = [];
+  const profile = {};
+  profile.url = url;
+  const browser = await puppeteer.launch({headless: true,userDataDir: './my/path'});
+  const page  = await browser.newPage();
+  await page.setCookie(cookie);
+  await page.setViewport({
+    width: 1200,
+    height: 1200
+});
+  await page.goto(url,{waitUntil: "load"});
+  await page.waitForSelector(".ph5 > .display-flex > div img");
+  const result = await page.$eval("body",el => el.innerHTML);
+  // console.log(result);
+  const $ = cheerio.load(result);
         const fullName = $(selectors.fullName).text();
         profile.fullName = fullName;
         console.log(fullName);
@@ -84,16 +83,8 @@ const ScrapeProfiles = async (profileURL,headless=true) => {
             profile.education.push(educationItem);
             console.log()
         });
-    
-        // console.log(profile);
-        profiles.push(profile);
-    }
-    await browser.close();
-    console.log(profiles);
-    return profiles;
+  browser.close();
+
 }
 
-
-
-// ScrapeProfile(profileURLS);
-export default ScrapeProfiles;
+export default test;
